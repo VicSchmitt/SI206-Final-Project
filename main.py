@@ -209,15 +209,10 @@ if __name__ == "__main__":
     load_cache()
 
     movie_titles = [
-        "Tenet",
-        "Furiosa",
-        "A Minecraft Movie",
-        "Spider-Man: No Way Home",
-        "The Batman",
-        "Top Gun Maverick",
-        "John Wick Chapter 4",
-        "Fast X",
-        "Avatar The Way of Water"
+        "La La Land", "Moonlight", "Arrival", "Rogue One: A Star Wars Story", "John Wick: Chapter 2", "Get Out",
+        "Logan", "Wonder Woman", "Dunkirk", "Black Panther", "Avengers: Infinity War", "A Star Is Born",
+        "Bohemian Rhapsody", "Joker", "Parasite", "Knives Out", "1917", "Tenet", "Soul", "Nomadland",
+        "Spider-Man: No Way Home", "Dune", "The Batman", "Everything Everywhere All at Once", "Top Gun: Maverick"
     ]
 
     results = []
