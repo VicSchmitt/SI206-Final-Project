@@ -3,6 +3,9 @@ import json
 import os
 from googleapiclient.discovery import build
 import matplotlib
+import subprocess
+from select_data import join_movie_video_data
+from calculate_data import calculate_stats
 
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -325,6 +328,27 @@ if __name__ == "__main__":
             print(f"No trailer view count for {title}")
 
     save_cache()
+
+        # Run store_data.py to populate the database
+    subprocess.run(["python", "store_data.py"], check=True)
+
+    # Join data and calculate stats
+    joined_data = join_movie_video_data()
+    stats = calculate_stats()
+
+    print("\nJoined Data Sample:")
+    for row in joined_data[:5]:
+        print(row)
+
+    print(f"\nTotal Views: {stats['total_views']}")
+    print(f"Average Rotten Tomatoes Rating: {stats['average_rt']}")
+
+    # Optional: write results to file (assumes write_results.py exists and writes from DB)
+    try:
+        subprocess.run(["python", "write_results.py"], check=True)
+        print("Results written to file successfully.")
+    except FileNotFoundError:
+        print("write_results.py not found. Skipping file output.")
 
     df = pd.DataFrame(results)
     print("\nCollected Data:")

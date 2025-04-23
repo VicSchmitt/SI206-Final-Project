@@ -27,7 +27,7 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS Videos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             movie_id INTEGER,
-            video_id TEXT,
+            video_id TEXT UNIQUE,
             title TEXT,
             view_count INTEGER,
             FOREIGN KEY(movie_id) REFERENCES Movies(id)
@@ -45,14 +45,24 @@ def get_existing_titles():
     conn.close()
     return existing
 
+def get_row_counts():
+    path = os.path.dirname(os.path.abspath(__file__))
+    conn = sqlite3.connect(path + "/" + DB_NAME)
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM Movies")
+    movie_count = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM Videos")
+    video_count = cur.fetchone()[0]
+    conn.close()
+    return movie_count, video_count
+
 def store_data_from_cache():
     data = load_cache_file()
     omdb_cache = data.get("omdb_cache", {})
     trailers_cache = data.get("trailers_cache", {})
-
     existing_titles = get_existing_titles()
-    new_count = 0
 
+    new_count = 0
     path = os.path.dirname(os.path.abspath(__file__))
     conn = sqlite3.connect(path + "/" + DB_NAME)
     cur = conn.cursor()
@@ -67,9 +77,9 @@ def store_data_from_cache():
         rt = info.get("RottenTomatoes")
         bo = info.get("BoxOffice")
         year = info.get("Year")
-        views = info.get("ViewCount")
 
         try:
+            # Insert movie info
             cur.execute('''
                 INSERT OR IGNORE INTO Movies (title, year, rotten_tomatoes, box_office)
                 VALUES (?, ?, ?, ?)
@@ -79,20 +89,38 @@ def store_data_from_cache():
             cur.execute("SELECT id FROM Movies WHERE title = ?", (title,))
             movie_id = cur.fetchone()[0]
 
-            cur.execute('''
-                INSERT OR IGNORE INTO Videos (movie_id, video_id, title, view_count)
-                VALUES (?, ?, ?, ?)
-            ''', (movie_id, "cached", f"{title} trailer", views))
-            conn.commit()
+            # Store all trailers for the movie individually
+            trailers = trailers_cache.get(title, [])
+            for trailer in trailers:
+                video_id = trailer.get("video_id")
+                video_title = trailer.get("title", "Untitled Trailer")
+                
+                # Get view count from video_stats_cache
+                view_count = 0
+                if video_id in data.get("video_stats_cache", {}):
+                    try:
+                        view_count = int(data["video_stats_cache"][video_id]["viewCount"])
+                    except (KeyError, ValueError, TypeError):
+                        view_count = 0
+
+                cur.execute('''
+                    INSERT OR IGNORE INTO Videos (movie_id, video_id, title, view_count)
+                    VALUES (?, ?, ?, ?)
+                ''', (movie_id, video_id, video_title, view_count))
+                conn.commit()
+
 
             new_count += 1
-            print(f"Stored: {title}")
+            print(f"Stored: {title} with {len(trailers)} trailer(s)")
 
         except Exception as e:
             print(f"Failed for {title}: {e}")
 
     conn.close()
-    print(f"Inserted {new_count} new movies this run.")
+    movie_total, video_total = get_row_counts()
+    print(f"\nInserted {new_count} new movies this run.")
+    print(f"Total Movies in DB: {movie_total}")
+    print(f"Total Trailers in DB: {video_total}")
 
 if __name__ == "__main__":
     create_tables()

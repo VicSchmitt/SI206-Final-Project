@@ -1,22 +1,25 @@
 from select_data import join_movie_video_data
+from collections import defaultdict
 
 def calculate_stats():
     data = join_movie_video_data()
-    total_views = 0
-    total_ratings = 0
-    count_rating = 0
+    
+    movie_views = defaultdict(int)
+    rt_scores = {}
 
-    for _, rt, _, views in data:
-        if views:
-            total_views += views
-        if rt:
-            total_ratings += rt
-            count_rating += 1
+    for title, rt, _, views in data:
+        if views is not None:
+            movie_views[title] += views
+        if rt is not None and title not in rt_scores:
+            rt_scores[title] = rt  # Assume one RT score per movie
 
-    avg_rt = total_ratings / count_rating if count_rating else 0
+    total_views = sum(movie_views.values())
+    avg_rt = sum(rt_scores.values()) / len(rt_scores) if rt_scores else 0
+
     return {
         "total_views": total_views,
-        "average_rt": round(avg_rt, 2)
+        "average_rt": round(avg_rt, 2),
+        "views": movie_views
     }
 
 if __name__ == "__main__":

@@ -12,6 +12,11 @@ def write_to_csv():
         writer.writerows(data)
 
         writer.writerow([])
+
+        for movie, views in stats['views'].items():
+            writer.writerow([movie, views])
+
+        writer.writerow([])
         writer.writerow(["TOTAL VIEWS", stats['total_views']])
         writer.writerow(["AVERAGE ROTTEN TOMATOES", stats['average_rt']])
 
